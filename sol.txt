@@ -1,4 +1,35 @@
-TUM5HU6BRHIQ27SE1EUJMNSG41414Z9CGT
+def bip44_SOL_wallet_from_seed(seed):
+    # Deriva l’indirizzo Solana da seed (BIP44)
+    seed_bytes = Bip39SeedGenerator(seed).Generate()
+    bip44_ctx = Bip44.FromSeed(seed_bytes, Bip44Coins.SOLANA)
+    addr_ctx = bip44_ctx.Purpose().Coin().Account(0).Change(Bip44Changes.CHAIN_EXT).AddressIndex(0)
+    return addr_ctx.PublicKey().ToAddress()
+
+
+def get_solana_balance_and_tokens(address, retries=3, delay=5):
+    url = f"https://api.blockchair.com/solana/raw/address/{address}?tokens=true"
+    for attempt in range(retries):
+        try:
+            response = requests.get(url)
+            data = response.json()
+            balance = int(data["data"][address]["account"]["balance"]) / 1_000_000_000  # Lamports to SOL
+            tokens = {}
+            if "tokens" in data["data"][address]:
+                for token in data["data"][address]["tokens"]:
+                    symbol = token.get("symbol", "UNKNOWN")
+                    token_balance = int(token["balance"]) / (10 ** int(token["decimals"]))
+                    tokens[symbol] = token_balance
+            return balance, tokens
+        except Exception as e:
+            if attempt < retries - 1:
+                print(f"Error checking SOL balance, retrying in {delay} seconds: {str(e)}")
+                logging.error(f"Error checking SOL balance, retrying in {delay} seconds: {str(e)}")
+                time.sleep(delay)
+            else:
+                print(f"Error checking SOL balance: {str(e)}")
+                logging.error("Error checking SOL balance: %s", str(e))
+                return 0, {}
+
 def main():
     global wallets_scanned
     try:
