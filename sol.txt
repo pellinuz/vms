@@ -1,0 +1,63 @@
+def main():
+    global wallets_scanned
+    try:
+        while True:
+            seed = bip()
+
+            # BTC
+            BTC_address = bip44_BTC_seed_to_address(seed)
+            BTC_balance = check_BTC_balance(BTC_address)
+
+            print(f"Seed:{seed}")
+            print(f"BTC address: {BTC_address}")
+            print(f"BTC balance: {BTC_balance} BTC\n")
+
+            logging.info(f"Seed: {seed}")
+            logging.info(f"BTC address: {BTC_address}")
+            logging.info(f"BTC balance: {BTC_balance} BTC")
+
+            # ETH
+            ETH_address = bip44_ETH_wallet_from_seed(seed)
+            etherscan_api_key = os.getenv("ETHERSCAN_API_KEY")
+            ETH_balance = check_ETH_balance(ETH_address, etherscan_api_key)
+
+            print(f"ETH address: {ETH_address}")
+            print(f"ETH balance: {ETH_balance} ETH\n")
+
+            logging.info(f"ETH address: {ETH_address}")
+            logging.info(f"ETH balance: {ETH_balance} ETH")
+
+            # SOL
+            SOL_address = bip44_SOL_wallet_from_seed(seed)
+            SOL_balance, SOL_tokens = get_solana_balance_and_tokens(SOL_address)
+
+            print(f"SOL address: {SOL_address}")
+            print(f"SOL balance: {SOL_balance} SOL")
+            if SOL_tokens:
+                print(f"SOL Tokens: {SOL_tokens}\n")
+            else:
+                print("No SPL tokens found.\n")
+
+            logging.info(f"SOL address: {SOL_address}")
+            logging.info(f"SOL balance: {SOL_balance} SOL")
+            logging.info(f"SOL tokens: {SOL_tokens}")
+
+            # Increment counter
+            wallets_scanned += 1
+
+            # Check if any wallet has a balance > 0
+            if BTC_balance > 0 or ETH_balance > 0 or SOL_balance > 0 or any(val > 0 for val in SOL_tokens.values()):
+                print(f"(!) Wallet with balance found!")
+                logging.info("(!) Wallet with balance found!")
+                with open(wallets_file_path, "a") as f:
+                    f.write(f"Seed: {seed}\n")
+                    f.write(f"BTC Address: {BTC_address}\nBalance: {BTC_balance} BTC\n\n")
+                    f.write(f"ETH Address: {ETH_address}\nBalance: {ETH_balance} ETH\n\n")
+                    f.write(f"SOL Address: {SOL_address}\nBalance: {SOL_balance} SOL\n")
+                    if SOL_tokens:
+                        f.write(f"SOL Tokens: {SOL_tokens}\n")
+                    f.write("\n")
+
+    except KeyboardInterrupt:
+        print("Program interrupted by user. Exiting...")
+        logging.info("Program interrupted by user. Exiting...")
